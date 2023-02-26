@@ -56,45 +56,28 @@ public class MoveCategory {
             Tree categoryTo = manager.find(Tree.class, idTo);
             int toRightKey = categoryTo.getRight_key() - movedLeftKey;
 
-            if(idTo == 0){
-                // 4) Пересчитать отрицательные ключи в положительные в 0 категории.
-                TypedQuery<Integer> getMaxRightKeyQuery = manager.createQuery(
-                        "select max(t.right_key) from Tree t", Integer.class);
-                int maxRightKey = getMaxRightKeyQuery.getSingleResult();
+            // 3) Выделить место в новой родительской категории.
+            Query updateQuery3 = manager.createQuery(
+                    "update Tree t set t.left_key = t.left_key + ?1 where t.left_key > ?2");
+            updateQuery3.setParameter(1, count);
+            updateQuery3.setParameter(2, categoryTo.getRight_key());
+            updateQuery3.executeUpdate();
 
-                Query updateQuery6 = manager.createQuery(
-                        "update Tree t set t.left_key = 0 - t.left_key - ?3 + ?1 + 1, " +
-                                "t.right_key = 0 - t.right_key - ?4 + ?1 + 1, " +
-                                "t.level = t.level - ?2 + 1" +
-                                "where t.left_key < 0");
-                updateQuery6.setParameter(1, maxRightKey);
-                updateQuery6.setParameter(2, movedCategory.getLevel());
-                updateQuery6.setParameter(3, movedLeftKey);
-                updateQuery6.setParameter(4, movedRightKey);
-                updateQuery6.executeUpdate();
-            } else{
-                // 3) Выделить место в новой родительской категории.
-                Query updateQuery3 = manager.createQuery(
-                        "update Tree t set t.left_key = t.left_key + ?1 where t.left_key > ?2");
-                updateQuery3.setParameter(1, count);
-                updateQuery3.setParameter(2, categoryTo.getRight_key());
-                updateQuery3.executeUpdate();
+            Query updateQuery4 = manager.createQuery(
+                    "update Tree t set t.right_key = t.right_key + ?1 where t.right_key >= ?2");
+            updateQuery4.setParameter(1, count);
+            updateQuery4.setParameter(2, categoryTo.getRight_key());
+            updateQuery4.executeUpdate();
 
-                Query updateQuery4 = manager.createQuery(
-                        "update Tree t set t.right_key = t.right_key + ?1 where t.right_key >= ?2");
-                updateQuery4.setParameter(1, count);
-                updateQuery4.setParameter(2, categoryTo.getRight_key());
-                updateQuery4.executeUpdate();
+            // 4) Пересчитать отрицательные ключи в положительные в новую родительскую категорию.
+            Query updateQuery6 = manager.createQuery(
+                    "update Tree t set t.right_key = 0 - t.right_key + ?1, t.left_key = 0 - t.left_key + ?1, t.level = t.level - ?2 + ?3 + 1" +
+                            "where t.left_key < 0");
+            updateQuery6.setParameter(1, toRightKey);
+            updateQuery6.setParameter(2, movedCategory.getLevel());
+            updateQuery6.setParameter(3, categoryTo.getLevel());
+            updateQuery6.executeUpdate();
 
-                // 4) Пересчитать отрицательные ключи в положительные в новую родительскую категорию.
-                Query updateQuery6 = manager.createQuery(
-                        "update Tree t set t.right_key = 0 - t.right_key + ?1, t.left_key = 0 - t.left_key + ?1, t.level = t.level - ?2 + ?3 + 1" +
-                                "where t.left_key < 0");
-                updateQuery6.setParameter(1, toRightKey);
-                updateQuery6.setParameter(2, movedCategory.getLevel());
-                updateQuery6.setParameter(3, categoryTo.getLevel());
-                updateQuery6.executeUpdate();
-            }
             manager.getTransaction().commit();
 
         } catch (IOException e) {
