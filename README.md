@@ -1,0 +1,1 @@
+A console application for managing the hierarchical structure of entities stored in a database using a nested set model. The application uses JPA (Java Persistence API) to interact with the database. It allows the user to perform three basic operations on "Tree" entities: add, move, and delete.
